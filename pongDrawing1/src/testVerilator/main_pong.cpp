@@ -2,7 +2,7 @@
 #include <iostream>
 #include <verilated.h>
 #include "Vtop_pong.h"
-//#include "testbench.h"
+#include "testbench.h"
 
 // screen dimensions
 const int H_RES = 640;
@@ -17,56 +17,7 @@ typedef struct Pixel {  // for SDL texture
     uint8_t r;  // red
 } Pixel;
 
-template <class MODULE> class Testbench {
-protected:
-    // initialize Verilog module
-    MODULE* top;
-
-    // reference SDL keyboard state array: https://wiki.libsdl.org/SDL_GetKeyboardState
-	const Uint8 *keyb_state;
-public:
-    Testbench() {
-		top = new MODULE;
-		keyb_state = SDL_GetKeyboardState(NULL);
-	}
-    ~Testbench() {
-		top->final();
-		delete top;
-	}
-
-    virtual void reset() {
-	    top->btn_rst = 1;
-	    top->pix_clk = 0;
-	    top->eval();
-	    top->pix_clk = 1;
-	    top->eval();
-	    top->btn_rst = 0;
-	    top->pix_clk = 0;
-	    top->eval();
-	}
-
-    virtual void tick() {
-        top->pix_clk = 1;
-        top->eval();
-        top->pix_clk = 0;
-        top->eval();
-	}
-
-    virtual bool pollQuit() {
-    	SDL_Event e;
-    	if (SDL_PollEvent(&e)) {
-    	    if (e.type == SDL_QUIT) {
-    	        return true;
-    	    }
-    	}
-
-        if (keyb_state[SDL_SCANCODE_Q]) return true;  // quit if user presses 'Q'
-
-    	return false;
-	}
-};
-
-template<class MODULE> class TestRender : public Testbench<MODULE> {
+class TestRender : public Testbench {
 private:
 	SDL_Window* sdl_window = NULL;
 	SDL_Renderer* sdl_renderer = NULL;
@@ -140,8 +91,8 @@ int main(int argc, char* argv[]) {
 
     printf("Simulation running. Press 'Q' in simulation window to quit.\n\n");
 
-	TestRender<Vtop_pong> testbench;
-	testbench.reset();
+	TestRender renderBench;
+	renderBench.reset();
 
     // initialize frame rate
     uint64_t start_ticks = SDL_GetPerformanceCounter();
@@ -150,19 +101,19 @@ int main(int argc, char* argv[]) {
     // main loop
     while (1) {
         // cycle the clock
-		testbench.tick();
+		renderBench.tick();
 
         // update pixel if not in blanking interval
-		testbench.updatePixel(screenbuffer);
+		renderBench.updatePixel(screenbuffer);
 
         // update texture once per frame (in blanking)
-		if (testbench.isNewFrame()) {
+		if (renderBench.isNewFrame()) {
             // check for quit event
-			if (testbench.pollQuit()) {
+			if (renderBench.pollQuit()) {
 				break;
 			}
 
-			testbench.renderFrame(screenbuffer);
+			renderBench.renderFrame(screenbuffer);
             frame_count++;
         }
     }

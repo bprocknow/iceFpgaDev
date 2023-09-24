@@ -1,20 +1,19 @@
 #include <SDL.h>
+#include <iostream>
 #include "testbench.h"
+#include "Vtop_pong.h"
 
-template <class MODULE>
-Testbench<MODULE>::Testbench() {
-	top = new MODULE;
+Testbench::Testbench() {
+	top = new Vtop_pong;
 	keyb_state = SDL_GetKeyboardState(NULL);
 }
 
-template <class MODULE>
-Testbench<MODULE>::~Testbench() {
+Testbench::~Testbench() {
     top->final();
     delete top;
 }
 
-template <class MODULE>
-void Testbench<MODULE>::reset() {
+void Testbench::reset() {
     top->btn_rst = 1;
     top->pix_clk = 0;
     top->eval(); 
@@ -25,16 +24,14 @@ void Testbench<MODULE>::reset() {
     top->eval();
 }
 
-template <class MODULE>
-void Testbench<MODULE>::tick() {
+void Testbench::tick() {
         top->pix_clk = 1;
         top->eval(); 
         top->pix_clk = 0;
         top->eval();
 }
 
-template <class MODULE>
-bool Testbench<MODULE>::pollQuit() {
+bool Testbench::pollQuit() {
     SDL_Event e;
     if (SDL_PollEvent(&e)) {
         if (e.type == SDL_QUIT) {

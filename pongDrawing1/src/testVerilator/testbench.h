@@ -1,10 +1,12 @@
 #ifndef TESTBENCH
 #define TESTBENCH
 
-template <class MODULE> class Testbench {
+#include "Vtop_pong.h"
+
+class Testbench {
 protected:
     // initialize Verilog module
-    MODULE* top;
+    Vtop_pong* top;
 
     // reference SDL keyboard state array: https://wiki.libsdl.org/SDL_GetKeyboardState
     const Uint8 *keyb_state;
