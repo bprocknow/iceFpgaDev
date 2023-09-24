@@ -4,6 +4,7 @@
 template <class MODULE>
 Testbench<MODULE>::Testbench() {
 	top = new MODULE;
+	keyb_state = SDL_GetKeyboardState(NULL);
 }
 
 template <class MODULE>
@@ -40,5 +41,8 @@ bool Testbench<MODULE>::pollQuit() {
             return true;
         }
     }
+
+	if (keyb_state[SDL_SCANCODE_Q]) return true;	// Quit if user presses 'Q'
+
     return false;
 }

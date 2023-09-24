@@ -66,7 +66,7 @@ public:
 	}
 };
 
-class TestRender : public Testbench<Vtop_pong> {
+template<class MODULE> class TestRender : public Testbench<MODULE> {
 private:
 	SDL_Window* sdl_window = NULL;
 	SDL_Renderer* sdl_renderer = NULL;
@@ -108,7 +108,7 @@ public:
 	}
 
 	bool isNewFrame() {
-        if (top->sdl_sy == V_RES && top->sdl_sx == 0) {
+        if (this->top->sdl_sy == V_RES && this->top->sdl_sx == 0) {
 			return true;
 		}
 
@@ -116,12 +116,12 @@ public:
 	}
 
 	void updatePixel (Pixel* screenbuffer) {
-        if (top->sdl_de) {
-    		Pixel* p = &screenbuffer[(top->sdl_sy - VA_BACK_PORCH)*H_RES + (top->sdl_sx - HA_BACK_PORCH)];
+        if (this->top->sdl_de) {
+    		Pixel* p = &screenbuffer[(this->top->sdl_sy - VA_BACK_PORCH)*H_RES + (this->top->sdl_sx - HA_BACK_PORCH)];
     		p->a = 0xFF;  // transparency
-    		p->b = top->sdl_b;
-    		p->g = top->sdl_g;
-    		p->r = top->sdl_r;
+    		p->b = this->top->sdl_b;
+    		p->g = this->top->sdl_g;
+    		p->r = this->top->sdl_r;
 		}
 	}
 
@@ -140,8 +140,7 @@ int main(int argc, char* argv[]) {
 
     printf("Simulation running. Press 'Q' in simulation window to quit.\n\n");
 
-	TestRender testbench;
-	//TestRender testbench;
+	TestRender<Vtop_pong> testbench;
 	testbench.reset();
 
     // initialize frame rate
