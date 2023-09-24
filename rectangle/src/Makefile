@@ -11,7 +11,7 @@ SRC_NAME = top_rectangle
 
 # included modules
 ADD_SRC = display_signal.sv
-ADD_SRC += pix_clk.sv
+ADD_SRC += pixel_clock.sv
 
 my_project: $(SRC_NAME).rpt $(SRC_NAME).bin
 

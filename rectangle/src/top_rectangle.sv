@@ -1,4 +1,15 @@
-module top_rectangle(
+module top_rectangle #(parameter COORDWID=10) (
+`ifdef SIMULATED
+	input wire logic pix_clk,	// Testbench/Verilator clock input
+	input wire logic pix_clk_lock,
+	input wire logic sim_rst,
+	output logic [COORDWID-1:0] sdl_sx,
+	output logic [COORDWID-1:0] sdl_sy,
+	output logic sdl_de,
+	output logic [7:0] sdl_r,	// Output 8-bit color (Only generating 4-bit color)
+	output logic [7:0] sdl_g,
+	output logic [7:0] sdl_b
+`else // !SIMULATED
 	input wire logic clk_12m, 	// 12MHz clock
 	input wire logic btn_rst,	// Reset button
 	output logic dvi_clk,
@@ -8,6 +19,7 @@ module top_rectangle(
 	output logic [3:0] dvi_r,
 	output logic [3:0] dvi_g,
 	output logic [3:0] dvi_b
+`endif
 	);
 
 	// Horizonal display timing parameters
@@ -15,7 +27,7 @@ module top_rectangle(
         localparam HA_FRONT_PORCH = 16;
         localparam HA_SYNC_WIDTH = 96;
         localparam HA_BACK_PORCH = 48;
-        localparam HA_TOTAL_PIX = (HA_ACTIVE_PIX + HA_FRONT_PORCH + HA_SYNC_PORCH + HA_BACK_PORCH);
+        localparam HA_TOTAL_PIX = (HA_ACTIVE_PIX + HA_FRONT_PORCH + HA_SYNC_WIDTH + HA_BACK_PORCH);
 
 	// Vertical display timing parameters
         localparam VA_ACTIVE_PIX = 480;
@@ -24,6 +36,7 @@ module top_rectangle(
         localparam VA_BACK_PORCH = 33;
         localparam VA_TOTAL_PIX = (VA_ACTIVE_PIX + VA_FRONT_PORCH + VA_SYNC_WIDTH + VA_BACK_PORCH);
 
+`ifndef SIMULATED
 	// Instantiate a pixel clock
 	wire logic pix_clk;
 	wire logic pix_clk_lock;
@@ -33,6 +46,7 @@ module top_rectangle(
 		.pix_clk(pix_clk),
 		.pix_clk_lock(pix_clk_lock)
 	); 
+`endif
 
 	// Instantiate the display signals
 	logic [9:0] sx;
@@ -42,7 +56,11 @@ module top_rectangle(
 	wire logic vsync;
 	display_signal disp_signal_inst (
 		.pix_clk(pix_clk),
+`ifdef SIMULATED
+		.rst_pix(sim_rst),
+`else
 		.rst_pix(!pix_clk_lock),	// Wait for pixel clock to be ready
+`endif
 		.sx(sx),
 		.sy(sy),
 		.de(de),
@@ -77,6 +95,17 @@ module top_rectangle(
 		pixcolor_b = (rectangle) ? rectcolor_b : backcolor_b;
 	end
 
+`ifdef SIMULATED 	// Don't use vsync
+	always_ff @(posedge pix_clk) begin
+		sdl_sx <= sx;
+		sdl_sy <= sy;
+		sdl_de <= de;
+		sdl_r <= {2{pixcolor_r}};	// Send 8-bits per color
+		sdl_g <= {2{pixcolor_g}};
+		sdl_b <= {2{pixcolor_b}};
+	end
+
+`else 		// Build when synthesizing
 	localparam black_pix = 4'h0;
 	logic [3:0] dispcolor_r, dispcolor_g, dispcolor_b;
 	always_comb begin 
@@ -106,5 +135,6 @@ module top_rectangle(
 	    .D_OUT_0(1'b0),
 	    .D_OUT_1(1'b1)
 	);
+`endif
 
 endmodule

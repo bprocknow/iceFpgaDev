@@ -24,15 +24,15 @@ module display_signal(
         localparam VA_TOTAL_PIX = (VA_ACTIVE_PIX + VA_FRONT_PORCH + VA_SYNC_WIDTH + VA_BACK_PORCH);
 
 	always_comb begin
-		de <=	((sx >= HA_BACK_PORCH) && 
+		de =	((sx >= HA_BACK_PORCH) && 
 			(sx < (HA_BACK_PORCH + HA_ACTIVE_PIX)) &&
 			(sy >= VA_BACK_PORCH) &&
 			(sy < (VA_BACK_PORCH + VA_ACTIVE_PIX)));
 		// Invert polarity - low voltage on sync
-		hsync <=~(sx >=(HA_BACK_PORCH + HA_ACTIVE_PIX + HA_FRONT_PORCH) &&
+		hsync = ~(sx >=(HA_BACK_PORCH + HA_ACTIVE_PIX + HA_FRONT_PORCH) &&
 			(sx < (HA_TOTAL_PIX)));
 		// Invert polarity - low voltage on sync
-		vsync <=~(sy >=(VA_BACK_PORCH + VA_ACTIVE_PIX + VA_FRONT_PORCH) &&
+		vsync = ~(sy >=(VA_BACK_PORCH + VA_ACTIVE_PIX + VA_FRONT_PORCH) &&
 			(sy < (VA_TOTAL_PIX)));
 	end
 
