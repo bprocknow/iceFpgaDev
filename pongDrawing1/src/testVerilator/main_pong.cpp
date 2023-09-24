@@ -17,18 +17,16 @@ typedef struct Pixel {  // for SDL texture
     uint8_t r;  // red
 } Pixel;
 
-//template <class MODULE> class Testbench {
-class Testbench {
+template <class MODULE> class Testbench {
 protected:
     // initialize Verilog module
-    Vtop_pong* top;
+    MODULE* top;
 
     // reference SDL keyboard state array: https://wiki.libsdl.org/SDL_GetKeyboardState
 	const Uint8 *keyb_state;
 public:
     Testbench() {
-		//top = new MODULE;
-		top = new Vtop_pong;
+		top = new MODULE;
 		keyb_state = SDL_GetKeyboardState(NULL);
 	}
     ~Testbench() {
@@ -68,8 +66,7 @@ public:
 	}
 };
 
-//template <class MODULE> class TestRender : public Testbench<MODULE> {
-class TestRender : public Testbench {
+class TestRender : public Testbench<Vtop_pong> {
 private:
 	SDL_Window* sdl_window = NULL;
 	SDL_Renderer* sdl_renderer = NULL;
@@ -113,9 +110,9 @@ public:
 	bool isNewFrame() {
         if (top->sdl_sy == V_RES && top->sdl_sx == 0) {
 			return true;
-		} else {
-			return false;
 		}
+
+		return false;
 	}
 
 	void updatePixel (Pixel* screenbuffer) {
@@ -143,8 +140,8 @@ int main(int argc, char* argv[]) {
 
     printf("Simulation running. Press 'Q' in simulation window to quit.\n\n");
 
-	//TestRender<Vtop_pong> testbench;
 	TestRender testbench;
+	//TestRender testbench;
 	testbench.reset();
 
     // initialize frame rate
