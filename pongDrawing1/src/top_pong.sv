@@ -1,4 +1,4 @@
-module top_rectangle(
+module top_pong(
 	input wire logic clk_12m, 	// 12MHz clock
 	input wire logic btn_rst,	// Reset button
 	output logic dvi_clk,

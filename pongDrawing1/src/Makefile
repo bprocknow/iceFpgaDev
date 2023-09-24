@@ -7,11 +7,12 @@ FPGA_PKG = sg48
 FPGA_TYPE = up5k
 PCF = icebreaker.pcf
 
-SRC_NAME = top_rectangle
+SRC_NAME = top_pong
 
 # included modules
 ADD_SRC = display_signal.sv
 ADD_SRC += pix_clk.sv
+ADD_SRC += ../external/uart_ice40/src/uartICE40.v
 
 my_project: $(SRC_NAME).rpt $(SRC_NAME).bin
 
