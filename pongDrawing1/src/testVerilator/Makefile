@@ -6,23 +6,18 @@ BUILD_DIR = ./obj_dir
 
 pong: pong.exe
 
-SRCS = testbench
+SRCS = testbench.cpp renderbench.cpp
+OBJS = $(patsubst %.cpp,$(BUILD_DIR)/%.o,$(SRCS))
 
-#%.exe: %.mk $(SRCS).o
-#	make -C ./obj_dir -f Vtop_$<
 %.exe: %.mk
 	make -C $(BUILD_DIR) -f Vtop_$<
-
-#%.o: $(SRCS).cpp
-#	$(CXX) $(CXXFLAGS) -I.. -I/usr/include/SDL2 $(VINC_PATH) -c $< -o ./obj_dir/$@
 
 %.mk: ../top_%.sv
 	mkdir -p $(BUILD_DIR)
 	verilator ${VFLAGS} -I.. $(VINC_PATH) \
-		-cc $< --exe $(SRCS).cpp main_$(basename $@).cpp -o $(basename $@) \
+		-cc $< --exe $(SRCS) main_$(basename $@).cpp -o $(basename $@) \
 		-CFLAGS "${SDL_CFLAGS}" -DSIMULATED -LDFLAGS "${SDL_LDFLAGS}"
-	$(CXX) $(CXXFLAGS) -I$(BUILD_DIR) -I/usr/include/SDL2 $(VINC_PATH) -c $(SRCS).cpp -o $(BUILD_DIR)/$(SRCS).o
-
+	
 clean:
 	rm -rf $(BUILD_DIR) 
 
