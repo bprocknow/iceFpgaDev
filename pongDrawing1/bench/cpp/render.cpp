@@ -36,7 +36,7 @@ Render::~Render() {
     SDL_Quit();
 }
 
-bool Render::isNewFrame() {
+bool Render::isNewFrame(Testbench *testbench) {
     if (this->top->sdl_sy == V_RES && this->top->sdl_sx == 0) {
         return true;
     }

@@ -18,7 +18,7 @@ typedef struct Pixel {  // for SDL texture
 } Pixel;
 
 
-class Render : private Testbench {
+class Render {
 protected:
     SDL_Window* sdl_window = NULL;
     SDL_Renderer* sdl_renderer = NULL;

@@ -1,6 +1,5 @@
 .PHONY: all
 .DELETE_ON_ERROR:
-all:	test
 YYMMDD=`date +%Y%m%d`
 CXX   := g++
 FBDIR := .
@@ -9,13 +8,14 @@ RTLDR := ../../rtl
 VERILATOR := verilator
 VFLAGS := -Wall --MMD --trace -y $(RTLDR) -cc
 UART_EXT := ../../external/wbuart32/rtl
+HW_EXT_SRC := ../../external/wbuart32/bench/verilog/helloworld.v
 
-.PHONY: testhello
-test: testhello
+.PHONY: testtxrx
+all: testtxrx 
 
-testhello:      $(VDIRFB)/Vtesttx__ALL.a
+testtxrx:      $(VDIRFB)/Vtesttxrx__ALL.a
 
-$(VDIRFB)/Vtesttx__ALL.a:     $(VDIRFB)/Vtesttx.cpp
+$(VDIRFB)/Vtesttxrx__ALL.a:     $(VDIRFB)/Vtesttxrx.cpp
 
 ## Verilate build instructions
 $(VDIRFB)/V%.mk:  $(VDIRFB)/V%.h
@@ -23,8 +23,8 @@ $(VDIRFB)/V%.h:   $(VDIRFB)/V%.cpp
 $(VDIRFB)/V%.cpp: $(FBDIR)/%.v
 	$(VERILATOR) $(VFLAGS) $*.v
 
-$(VDIRFB)/Vtesttx.cpp: $(FBDIR)/testtx.v
-	$(VERILATOR) $(VFLAGS) -I$(UART_EXT) --prefix Vtesttx testtx.v
+$(VDIRFB)/Vtesttxrx.cpp: $(FBDIR)/testtxrx.v
+	$(VERILATOR) $(VFLAGS) -I$(UART_EXT) --prefix Vtesttxrx testtxrx.v
 
 ## Turn C++ to libraries
 $(VDIRFB)/V%__ALL.a: $(VDIRFB)/V%.cpp

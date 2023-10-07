@@ -4,37 +4,38 @@ OBJDIR  := obj-pc
 RTLD	:= ../verilog
 VERILATOR_ROOT = /usr/share/verilator
 VROOT   := $(VERILATOR_ROOT)
-INCS	:= -I$(RTLD)/obj_dir/ -I$(VROOT)/include -I/usr/lib/SDL2
-SOURCES := main_pong.cpp uartrxtx.cpp testbench.cpp tracebench.cpp uartsim.cpp #render.cpp
-HEADERS := uartrxtx.h tracebench.h testbench.h uartsim.h #render.h
+EXT_UART_DIR := ../../external/wbuart32/bench/cpp
+INCS	:= -I$(RTLD)/obj_dir/ -I$(VROOT)/include -I/usr/lib/SDL2 -I$(EXT_UART_DIR)
+EXT_SRCS := uartsim.cpp
+SHARED_SOURCES := testbench.cpp tracebench.cpp clientuart.cpp
+SOURCES := $(SHARED_SOURCES) $(EXT_UART_DIR)/uartsim.cpp main_txrx.cpp 
+HEADERS := tracebench.h testbench.h clientuart.h $(EXT_UART_DIR)/uartsim.h
 VOBJDR	:= $(RTLD)/obj_dir
 SYSVDR	:= $(VROOT)/include
 ## }}}
-all:	$(OBJDIR)/ testtx
 
 # Verilator's generated Makefile sets VM_*
--include $(VOBJDR)/Vtesttx_classes.mk
+-include $(VOBJDR)/Vtesttxrx_classes.mk
 VSRC	:= $(addsuffix .cpp, $(VM_GLOBAL_FAST) $(VM_GLOBAL_SLOW))
 VLIB	:= $(addprefix $(OBJDIR)/,$(subst .cpp,.o,$(VSRC)))
 
-$(OBJDIR)/uartsim.o: uartsim.cpp uartsim.h
-#$(OBJDIR)/render.o: render.cpp render.h
-$(OBJDIR)/uartrxtx.o: uartrxtx.cpp uartrxtx.h
-$(OBJDIR)/tracebench.o: tracebench.cpp tracebench.h
-
 $(OBJDIR)/%.o: %.cpp
 	$(mk-objdir)
-	$(CXX) $(FLAGS) $(INCS) -c $< -o $@
+	$(CXX) $(FLAGS) $(INCS) -DTESTTX -c $< -o $@
 
 $(OBJDIR)/%.o: $(SYSVDR)/%.cpp
 	$(mk-objdir)
 	$(CXX) $(FLAGS) $(INCS) -c $< -o $@
 
-## Hello World
-# Sources necessary to build the testtx test (txuart test)
-HLOOBJ := $(subst .cpp,.o,$(SOURCES))
-HLOOBJS:= $(addprefix $(OBJDIR)/,$(HLOOBJ)) $(VLIB)
-testtx: $(HLOOBJS) $(VOBJDR)/Vtesttx__ALL.a
+$(OBJDIR)/%.o: $(EXT_UART_DIR)/%.cpp
+	$(mk-objdir)
+	$(CXX) $(FLAGS) $(INCS) -c $< -o $@
+
+# Sources necessary to build (uart test)
+TXRXSRCS := $(SHARED_SOURCES) main_txrx.cpp
+TXRXOBJ := $(subst .cpp,.o,$(EXT_SRCS)) $(subst .cpp,.o,$(TXRXSRCS)) 
+TXRXOBJS:= $(addprefix $(OBJDIR)/,$(TXRXOBJ)) $(VLIB)
+testtxrx: $(TXRXOBJS) $(VOBJDR)/Vtesttxrx__ALL.a 
 	$(CXX) $(FLAGS) $(INCS) $^ -lpthread -lSDL2 -o $@
 
 define	build-depends
@@ -65,7 +66,7 @@ tags:	$(SOURCES) $(HEADERS)
 
 .PHONY: clean
 clean:
-	rm -f ./testtx 
+	rm -f ./testtxrx
 	rm -rf $(OBJDIR)/
 
 ifneq ($(MAKECMDGOALS),clean)

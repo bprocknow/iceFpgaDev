@@ -10,7 +10,7 @@ PCF = icebreaker.pcf
 SRC_NAME = top_pong
 
 # included modules
-ADD_SRC = display_signal.sv pix_clk.sv
+ADD_SRC = display_signal.sv pix_clk.sv render.sv 
 ADD_SRC += ../external/wbuart32/rtl/txuartlite.v
 ADD_SRC += ../external/wbuart32/rtl/rxuartlite.v
 

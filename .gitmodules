@@ -1,3 +1,0 @@
-[submodule "pongDrawing1/external/uart_ice40"]
-	path = pongDrawing1/external/uart_ice40
-	url = https://github.com/bnossum/uart_ice40.git

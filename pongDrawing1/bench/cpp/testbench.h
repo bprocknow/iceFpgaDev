@@ -2,7 +2,7 @@
 #define TESTBENCH
 
 #include "SDL2/SDL.h"
-#include "Vtesttx.h"
+#include "Vtesttxrx.h"
 
 class Testbench {
 protected:
@@ -12,7 +12,7 @@ protected:
     const Uint8 *keyb_state;
 public:
     // initialize Verilog module
-    Vtesttx* top;
+    Vtesttxrx* top;
 
     Testbench();
     virtual ~Testbench();
