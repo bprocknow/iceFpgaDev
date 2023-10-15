@@ -1,0 +1,26 @@
+
+Interface Control Document for UART messages
+
+------------------- Modes of Operation: -------------------
+1.) Programming Mode:  In programming mode, the FPGA will input a list of symbols that can be referenced in display mode.
+This list of symbols has various attributes that describe how the symbol will be rendered.
+
+2.) Display Mode:  In display mode, the user application can tell the FPGA how it should render the defined symbols using the supported attributes.i
+
+------------------- Supported Command Bytes: --------------
+1.) Symbol Definition:  List the symbols with attributes to render in display mode.
+
+2.) Operation Mode:  Swap from program to display mode.
+
+3.) Display Symbol:  Specify how to render the specifed symbol in display mode.
+
+------------------- HEADER --------------------------------	
+Byte #				Value				Description
+0					0xF5				Header byte to indicate start of transmission
+1					Command Byte		Indicates where to draw rectangle in x position from 0-255
+
+
+------------------- PAYLOAD -------------------------------
+
+					Symbol Definition
+

@@ -7,11 +7,11 @@ set_frequency  clk_12m      12
 set_io -nowarn clk_12m      35
 
 ## Buttons
-set_io -nowarn btn_rst      10
+set_io -nowarn n_btn_rst      10
 
 ## RS-232
-set_io -nowarn RX          6
-set_io -nowarn TX          9
+set_io -nowarn i_uart_rx    20
+set_io -nowarn o_uart_tx    21
 
 ## 12-bit DVI Pmod on Pmod 1A/1B
 set_io -nowarn dvi_clk      38

@@ -2,34 +2,22 @@ module render (
 	input wire logic de,
 	input wire logic [9:0] sx,
 	input wire logic [9:0] sy,
+	input wire logic [9:0] sympos,
 	output wire logic [3:0] dispcolor_r,
 	output wire logic [3:0] dispcolor_g,
 	output wire logic [3:0] dispcolor_b
 	);
 
-    // Horizonal display timing parameters
-    localparam HA_ACTIVE_PIX = 640;
-    localparam HA_FRONT_PORCH = 16;
-    localparam HA_SYNC_WIDTH = 96;
-    localparam HA_BACK_PORCH = 48;
-    localparam HA_TOTAL_PIX = (HA_ACTIVE_PIX + HA_FRONT_PORCH + HA_SYNC_WIDTH + HA_BACK_PORCH);
-
-    // Vertical display timing parameters
-    localparam VA_ACTIVE_PIX = 480;
-    localparam VA_FRONT_PORCH = 10;
-    localparam VA_SYNC_WIDTH = 2;
-    localparam VA_BACK_PORCH = 33;
-    localparam VA_TOTAL_PIX = (VA_ACTIVE_PIX + VA_FRONT_PORCH + VA_SYNC_WIDTH + VA_BACK_PORCH);
+	`include "display_timings.sv"
 
     // Drawing Logic
-    localparam rectstartx = 240;
     localparam rectstarty = 140;
     localparam rectwidth = 200;
     localparam rectheight = 150;
     logic rectangle;
     always_comb begin
-        rectangle = (sx >= (HA_BACK_PORCH + rectstartx)) &&
-            (sx < (HA_BACK_PORCH + rectstartx + rectwidth)) &&
+        rectangle = (sx >= (HA_BACK_PORCH + sympos)) &&
+            (sx < (HA_BACK_PORCH + sympos + rectwidth)) &&
             (sy >= (VA_BACK_PORCH + rectstarty)) &&
             (sy < (VA_BACK_PORCH + rectstarty + rectheight));
     end

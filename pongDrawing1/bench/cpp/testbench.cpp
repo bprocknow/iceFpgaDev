@@ -3,7 +3,7 @@
 #include "testbench.h"
 
 Testbench::Testbench() {
-	top = new Vtesttxrx();
+	top = new Vtestpong();
 
 	keyb_state = SDL_GetKeyboardState(NULL);
 }
@@ -14,11 +14,20 @@ Testbench::~Testbench() {
 }
 
 void Testbench::reset() {
-	// There is no reset button now
-	return;
+	top->i_clk = 0;
+	top->sim_rst = 1;		// Reset is inverted - high=off, low=reset
+	top->eval();
+	top->i_clk = 1;
+	top->sim_rst = 0;
+	top->eval();
+	top->i_clk = 0;
+	top->sim_rst = 1;
+	top->eval();
 }
 
 void Testbench::tick() {
+		top->i_clk = 0;
+		top->eval();
         top->i_clk = 1;
         top->eval(); 
         top->i_clk = 0;

@@ -7,15 +7,15 @@ VROOT   := $(VERILATOR_ROOT)
 EXT_UART_DIR := ../../external/wbuart32/bench/cpp
 INCS	:= -I$(RTLD)/obj_dir/ -I$(VROOT)/include -I/usr/lib/SDL2 -I$(EXT_UART_DIR)
 EXT_SRCS := uartsim.cpp
-SHARED_SOURCES := testbench.cpp tracebench.cpp clientuart.cpp
-SOURCES := $(SHARED_SOURCES) $(EXT_UART_DIR)/uartsim.cpp main_txrx.cpp 
-HEADERS := tracebench.h testbench.h clientuart.h $(EXT_UART_DIR)/uartsim.h
+SHARED_SOURCES := testbench.cpp tracebench.cpp clientuart.cpp render.cpp
+SOURCES := $(SHARED_SOURCES) $(EXT_UART_DIR)/uartsim.cpp main_pong.cpp 
+HEADERS := tracebench.h testbench.h clientuart.h render.h $(EXT_UART_DIR)/uartsim.h
 VOBJDR	:= $(RTLD)/obj_dir
 SYSVDR	:= $(VROOT)/include
 ## }}}
 
 # Verilator's generated Makefile sets VM_*
--include $(VOBJDR)/Vtesttxrx_classes.mk
+-include $(VOBJDR)/Vtestpong_classes.mk
 VSRC	:= $(addsuffix .cpp, $(VM_GLOBAL_FAST) $(VM_GLOBAL_SLOW))
 VLIB	:= $(addprefix $(OBJDIR)/,$(subst .cpp,.o,$(VSRC)))
 
@@ -32,10 +32,10 @@ $(OBJDIR)/%.o: $(EXT_UART_DIR)/%.cpp
 	$(CXX) $(FLAGS) $(INCS) -c $< -o $@
 
 # Sources necessary to build (uart test)
-TXRXSRCS := $(SHARED_SOURCES) main_txrx.cpp
+TXRXSRCS := $(SHARED_SOURCES) main_pong.cpp
 TXRXOBJ := $(subst .cpp,.o,$(EXT_SRCS)) $(subst .cpp,.o,$(TXRXSRCS)) 
 TXRXOBJS:= $(addprefix $(OBJDIR)/,$(TXRXOBJ)) $(VLIB)
-testtxrx: $(TXRXOBJS) $(VOBJDR)/Vtesttxrx__ALL.a 
+testpong: $(TXRXOBJS) $(VOBJDR)/Vtestpong__ALL.a 
 	$(CXX) $(FLAGS) $(INCS) $^ -lpthread -lSDL2 -o $@
 
 define	build-depends
@@ -66,7 +66,8 @@ tags:	$(SOURCES) $(HEADERS)
 
 .PHONY: clean
 clean:
-	rm -f ./testtxrx
+	rm -f ./testpong
+
 	rm -rf $(OBJDIR)/
 
 ifneq ($(MAKECMDGOALS),clean)

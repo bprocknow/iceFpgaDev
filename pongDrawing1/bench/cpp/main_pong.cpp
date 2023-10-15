@@ -2,13 +2,16 @@
 #include <iostream>
 #include <verilated.h>
 #include <signal.h>
-#include "Vtesttxrx.h"
+#include <chrono>
+#include "Vtestpong.h"
 #include "testbench.h"
 #include "tracebench.h"
 #include "uartsim.h"
 #include "clientuart.h"
+#include "render.h"
 
 const int uartPort = 50020;
+const int divisor = 868;		// Uart clock divisor
 volatile sig_atomic_t isChildSigterm = 0;
 
 void handle_sigterm(int signum) {
@@ -22,41 +25,40 @@ void sim_main_loop(void) {
 
 	struct sigaction sa;
 
-    // initialize frame rate
-    uint64_t start_ticks = SDL_GetPerformanceCounter();
-    uint64_t frame_count = 0;
-
 	// Setup signal handler to end process
 	sa.sa_handler = handle_sigterm;
 	sigemptyset(&sa.sa_mask);
 	sa.sa_flags = 0;
 	sigaction(SIGTERM, &sa, NULL);
 
-	Testbench *testbench = new Tracebench;
+	Testbench testbench;
 	UARTSIM *uart = new UARTSIM(uartPort);
+	uart->setup(divisor);
+	Render render;
 
-	testbench->reset();
+	testbench.top->i_setup = divisor;
+	testbench.reset();
 
     printf("Simulation running\n\n");
 
 	while(!isChildSigterm) {
 
-		testbench->tick();
+		testbench.tick();
+
+		render.renderFrame(testbench);
 
 		// Port input goes to simulated i_uart_rx, simulated o_uart_tx goes to write port
-		testbench->top->i_uart_rx = (*uart)(testbench->top->o_uart_tx);
+		testbench.top->i_uart_rx = (*uart)(testbench.top->o_uart_tx);
 
-		frame_count++;
+		if (testbench.pollQuit()) {
+			break;
+		}
 	}
 
-    // calculate frame rate
-    uint64_t end_ticks = SDL_GetPerformanceCounter();
-    double duration = ((double)(end_ticks-start_ticks))/SDL_GetPerformanceFrequency();
-    double fps = (double)frame_count/duration;
-    printf("Frames per second: %.1f\n", fps);
+    printf("Average frames per second: %.1f\n", render.getAveFps());
 
-	delete testbench;
 	delete uart;
+
 	exit(0);
 }
 
@@ -82,19 +84,19 @@ int main(int argc, char* argv[]) {
 
 	ClientUart cUart(uartPort);
 
-    char buf[] = "Hello World!";
+    char buf[2];
+	buf[0] = 0xF5;
 
 	std::cout << "Writing to simulation: " << buf << std::endl;	
+	for (int j = 0; j < 10; j++) {
+		for (int i = 0; i < 128; i++) {
+			buf[1] = i;
 
-	cUart.wrToServer(buf, sizeof(buf));
 
-	// Wait for simulation to generate response in port
-	sleep(1);
-
-    char buffer[100];
-
-	cUart.rdFromServer(buffer, sizeof(buffer));
-    std::cout << "Data Recieved from simulation: "<< buffer<<std::endl;
+			cUart.wrToServer(buf, sizeof(buf));
+			std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		}
+	}
 
 	kill(child_pid, SIGTERM);
 	

@@ -8,23 +8,22 @@ RTLDR := ../../rtl
 VERILATOR := verilator
 VFLAGS := -Wall --MMD --trace -y $(RTLDR) -cc
 UART_EXT := ../../external/wbuart32/rtl
-HW_EXT_SRC := ../../external/wbuart32/bench/verilog/helloworld.v
 
-.PHONY: testtxrx
-all: testtxrx 
+.PHONY: testpong
+all: testpong 
 
-testtxrx:      $(VDIRFB)/Vtesttxrx__ALL.a
+testpong:      $(VDIRFB)/Vtestpong__ALL.a
 
-$(VDIRFB)/Vtesttxrx__ALL.a:     $(VDIRFB)/Vtesttxrx.cpp
+$(VDIRFB)/Vtestpong__ALL.a:     $(VDIRFB)/Vtestpong.cpp
 
 ## Verilate build instructions
-$(VDIRFB)/V%.mk:  $(VDIRFB)/V%.h
-$(VDIRFB)/V%.h:   $(VDIRFB)/V%.cpp
-$(VDIRFB)/V%.cpp: $(FBDIR)/%.v
-	$(VERILATOR) $(VFLAGS) $*.v
+#$(VDIRFB)/V%.mk:  $(VDIRFB)/V%.h
+#$(VDIRFB)/V%.h:   $(VDIRFB)/V%.cpp
+#$(VDIRFB)/V%.cpp: $(FBDIR)/%.v
+#	$(VERILATOR) $(VFLAGS) $*.v
 
-$(VDIRFB)/Vtesttxrx.cpp: $(FBDIR)/testtxrx.v
-	$(VERILATOR) $(VFLAGS) -I$(UART_EXT) --prefix Vtesttxrx testtxrx.v
+$(VDIRFB)/Vtestpong.cpp: $(FBDIR)/testpong.sv
+	$(VERILATOR) $(VFLAGS) -DSIMULATED -I. -I$(UART_EXT) --prefix Vtestpong testpong.sv
 
 ## Turn C++ to libraries
 $(VDIRFB)/V%__ALL.a: $(VDIRFB)/V%.cpp

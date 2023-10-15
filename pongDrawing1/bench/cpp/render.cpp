@@ -1,7 +1,12 @@
 
 #include "render.h"
 
+/* --------------------- Constructor / Destructor -------------- */
+
 Render::Render() {
+
+	frame_count = 0;
+
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         printf("SDL init failed.\n");
         exit(1);
@@ -36,28 +41,55 @@ Render::~Render() {
     SDL_Quit();
 }
 
-bool Render::isNewFrame(Testbench *testbench) {
-    if (this->top->sdl_sy == V_RES && this->top->sdl_sx == 0) {
+/* ------------------- Private Functions ------------------------- */
+
+bool Render::isNewFrame(Testbench& testbench) {
+    if (testbench.top->sdl_sy == V_RES && testbench.top->sdl_sx == 0) {
         return true;
     }
 
     return false;
 }
 
-void Render::updatePixel (Pixel* screenbuffer) {
-    if (this->top->sdl_de) {
-        Pixel* p = &screenbuffer[(this->top->sdl_sy - VA_BACK_PORCH) * H_RES + (this->top->sdl_sx - HA_BACK_PORCH)];
+void Render::updatePixel (Testbench& testbench) {
+    if (testbench.top->sdl_de) {
+		Pixel* p = &screenbuffer[(testbench.top->sdl_sy - VA_BACK_PORCH) * H_RES + (testbench.top->sdl_sx - HA_BACK_PORCH)];
         p->a = 0xFF;  // transparency
-        p->b = this->top->sdl_b;
-        p->g = this->top->sdl_g;
-        p->r = this->top->sdl_r;
+        p->b = testbench.top->sdl_b;
+        p->g = testbench.top->sdl_g;
+        p->r = testbench.top->sdl_r;
     }
 }
 
-void Render::renderFrame(Pixel* screenbuffer) {
-    SDL_UpdateTexture(sdl_texture, NULL, screenbuffer, H_RES*sizeof(Pixel));
-    SDL_RenderClear(sdl_renderer);
-    SDL_RenderCopy(sdl_renderer, sdl_texture, NULL, NULL);
-    SDL_RenderPresent(sdl_renderer);
+/* --------------------- Public functions ---------------------------- */
+
+void Render::renderFrame(Testbench& testbench) {
+
+	// Start gathering frame statistics on first render
+	static bool startRender = false;
+	if (!startRender) {
+		startRender = true;
+		start_ticks = SDL_GetPerformanceCounter();
+	}
+	
+	updatePixel(testbench);
+
+	
+	if (isNewFrame(testbench)) {
+    	SDL_UpdateTexture(sdl_texture, NULL, screenbuffer, H_RES*sizeof(Pixel));
+    	SDL_RenderClear(sdl_renderer);
+    	SDL_RenderCopy(sdl_renderer, sdl_texture, NULL, NULL);
+    	SDL_RenderPresent(sdl_renderer);
+	
+		frame_count++;
+	}
+}
+
+float Render::getAveFps() {
+	uint64_t end_ticks = SDL_GetPerformanceCounter();
+	float duration = ((float)(end_ticks - start_ticks)) / SDL_GetPerformanceFrequency();
+	float fps = (float)frame_count / duration;
+
+	return fps;
 }
 
