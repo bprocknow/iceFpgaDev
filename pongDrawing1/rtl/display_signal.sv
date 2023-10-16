@@ -2,8 +2,8 @@
 module display_signal(
 	input wire logic pix_clk,
 	input wire logic rst_pix,
-	output logic [9:0] sx,
-	output logic [9:0] sy,
+	output logic [15:0] sx,
+	output logic [15:0] sy,
 `ifndef SIMULATED
 	output logic n_hsync,
 `endif

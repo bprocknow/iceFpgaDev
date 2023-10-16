@@ -1,8 +1,8 @@
 module render (
 	input wire logic de,
-	input wire logic [9:0] sx,
-	input wire logic [9:0] sy,
-	input wire logic [9:0] sympos,
+	input wire logic [15:0] sx,
+	input wire logic [15:0] sy,
+	input wire logic [31:0] uart_buf,
 	output wire logic [3:0] dispcolor_r,
 	output wire logic [3:0] dispcolor_g,
 	output wire logic [3:0] dispcolor_b
@@ -10,16 +10,20 @@ module render (
 
 	`include "display_timings.sv"
 
+	wire logic [15:0] sympos_x, sympos_y;
+
+	assign sympos_x = uart_buf[15:0];
+	assign sympos_y = uart_buf[31:16];
+
     // Drawing Logic
-    localparam rectstarty = 140;
     localparam rectwidth = 200;
     localparam rectheight = 150;
     logic rectangle;
     always_comb begin
-        rectangle = (sx >= (HA_BACK_PORCH + sympos)) &&
-            (sx < (HA_BACK_PORCH + sympos + rectwidth)) &&
-            (sy >= (VA_BACK_PORCH + rectstarty)) &&
-            (sy < (VA_BACK_PORCH + rectstarty + rectheight));
+        rectangle = (sx >= (HA_BACK_PORCH + sympos_x)) &&
+            (sx < (HA_BACK_PORCH + sympos_x + rectwidth)) &&
+            (sy >= (VA_BACK_PORCH + sympos_y)) &&
+            (sy < (VA_BACK_PORCH + sympos_y + rectheight));
     end
 
     // Creating pixel colors

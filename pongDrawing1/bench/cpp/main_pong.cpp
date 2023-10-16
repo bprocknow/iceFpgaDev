@@ -84,14 +84,18 @@ int main(int argc, char* argv[]) {
 
 	ClientUart cUart(uartPort);
 
-    char buf[2];
+    char buf[6];
 	buf[0] = 0xF5;
+	buf[1] = 0x03;
 
 	std::cout << "Writing to simulation: " << buf << std::endl;	
 	for (int j = 0; j < 10; j++) {
-		for (int i = 0; i < 128; i++) {
-			buf[1] = i;
-
+		for (uint16_t i = 0; i < 200; i++) {
+	
+			buf[2] = i & 0xFF;
+			buf[3] = (i >> 8) & 0xFF;
+			buf[4] = i & 0xFF;
+			buf[5] = (i >> 8) & 0xFF;
 
 			cUart.wrToServer(buf, sizeof(buf));
 			std::this_thread::sleep_for(std::chrono::milliseconds(100));

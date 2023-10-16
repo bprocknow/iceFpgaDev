@@ -17,10 +17,15 @@ This list of symbols has various attributes that describe how the symbol will be
 ------------------- HEADER --------------------------------	
 Byte #				Value				Description
 0					0xF5				Header byte to indicate start of transmission
-1					Command Byte		Indicates where to draw rectangle in x position from 0-255
-
+1					Command Byte		Indicates the type of message this is
 
 ------------------- PAYLOAD -------------------------------
 
 					Symbol Definition
 
+Display Symbol:		Command Byte 0x03
+2					<Symbol ID>			Symbol ID defined in Programming mode
+3					<Position X LSB>	LSB position in X on the display to draw the symbol
+4					<Position X MSB>	MSB position in X on the display to draw the symbol
+5					<Position Y LSB>	LSB position in X on the display to draw the symbol
+6					<Position Y MSB>	MSB position in X on the display to draw the symbol
