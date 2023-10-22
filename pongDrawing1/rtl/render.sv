@@ -2,6 +2,7 @@
 	If not in program mode, draw a black screen
 */
 module render #(PROG_PAYLD_PKT_BITS) (
+
 	input logic de,
 	input logic [15:0] sx,
 	input logic [15:0] sy,
@@ -25,8 +26,8 @@ module render #(PROG_PAYLD_PKT_BITS) (
 	assign rectcolor_b = prog_buffer[43:40];
 
     // Drawing Logic
-	localparam sympos_x = 50;
-	localparam sympos_y = 50;
+	localparam sympos_x = 16'd50;
+	localparam sympos_y = 16'd50;
     logic rectangle;
     always_comb begin
 		if (is_sym_mode) begin

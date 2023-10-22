@@ -7,7 +7,7 @@ FPGA_PKG = sg48
 FPGA_TYPE = up5k
 PCF = icebreaker.pcf
 
-SRC_NAME = top_pong
+SRC_NAME = top_graphicsprocessor
 
 # included modules
 ADD_SRC = display_signal.sv pix_clk.sv render.sv DataAggregator.sv synchronizer.sv CommandBuffer.sv
