@@ -1,37 +1,45 @@
 
-/*  Data Aggregator finds valid command packets and outputs them one byte at a time
+/*  Data Aggregator decodes packets and outputs the payload data bytes, command byte
 
-	valid_output:  Indicates that there is a valid output_byte
+	This module knows the length of the expected messages, and decodes the message type to find the size.
+
+	valid_output:  Indicates that there is a valid output aggregated packet
 */
-module DataAggregator (
+module DataAggregator # (
+	parameter MAX_PAYLD_PKT_BITS,		// Maximum packet bits (payload only)
+	localparam MAX_LEN_CMD = 9,			// Maximum length full input command in bytes
+	) (
 	input logic i_clk,
 	input logic n_btn_rst,
-	input wire [30:0] i_setup,
-	input wire logic i_uart_rx,
+	input logic  [30:0] i_setup,
+	input logic i_uart_rx,
 	output logic valid_output,		// Indicates that the outputted byte is valid
-	output logic [31:0] output_data
+	output logic is_prog_mode,
+	output logic [MAX_PAYLD_PKT_BITS-1:0] payload_data	// Non-header payload data
 	);
 
-	localparam MAX_LEN_CMD = 7;
-
-	typedef enum logic [(MAX_LEN_CMD-1):0] {
+	// All input command bytes have a state + one to process data
+	typedef enum logic [MAX_LEN_CMD+1:0] {
 		WAITING_FOR_HEADER,
 		CMD_BYTE,
-		POS_X_LSB,
-		POS_X_MSB,
-		POS_Y_LSB,
-		POS_Y_MSB,
+		BYTE_1,
+		BYTE_2,
+		BYTE_3,
+		BYTE_4,
+		BYTE_5,
+		BYTE_6,
+		BYTE_7,
 		PROCESS_DATA
-	} State;
+	} UartState;
 
 	reg pwr_reset;
 	wire logic rx_stb, rx_break, rx_perr, rx_ferr;
 	/* verilator lint_off UNUSED */
 	wire logic rx_ignored;
 	logic [7:0] rx_output;		// Buffer to Rx data
-	logic [31:0] buf_output;	// Buffer to hold command output
+	logic [MAX_PAYLD_PKT_BITS-1:0] buf_output;	// Buffer to hold command output
 
-	State curr_state, next_state;
+	UartState curr_state, next_state;
 
 	rxuart reciever (i_clk, pwr_reset, i_setup, i_uart_rx, rx_stb, rx_output, rx_break, rx_perr, rx_ferr, rx_ignored);
 
@@ -39,31 +47,49 @@ module DataAggregator (
 		if (!n_btn_rst) begin
 			pwr_reset <= 1'b1;
 			curr_state <= WAITING_FOR_HEADER;
-			output_data <= 32'd0;
-			valid_output <= 1'b1;
-		end else begin
+			payload_data <= (MAX_PAYLD_PKT_BITS-1)'d0;
+			valid_output <= 1'b0;
+			is_prog_mode <= 1'b1;
+		end else if (curr_state == CMD_BYTE) begin
 
+			pwr_reset <= 1'b0;
+			valid_output <= 1'b0;
+
+			if (is_prog_mode == 1'b0 && rx_output == 8'h01) begin
+				// Cannot process program commands in symbol mode
+				curr_state <= WAITING_FOR_HEADER;
+			end else if (rx_output == 8'h02) begin 
+				// Move to symbology mode
+				is_prog_mode <= 1'b0;
+				curr_state <= WAITING_FOR_HEADER;
+			end 
+		end else begin
 			curr_state <= next_state;
 			pwr_reset <= 1'b0;
 			case (curr_state)
-				POS_X_LSB: begin
+				BYTE_1: begin
 					buf_output[7:0] <= rx_output;
-					valid_output <= 1'b0;
 				end
-				POS_X_MSB: begin
+				BYTE_2: begin
 					buf_output[15:8] <= rx_output;
-					valid_output <= 1'b0;
 				end
-				POS_Y_LSB: begin
+				BYTE_3: begin
 					buf_output[23:16] <= rx_output;
-					valid_output <= 1'b0;
 				end
-				POS_Y_MSB: begin
+				BYTE_4: begin
 					buf_output[31:24] <= rx_output;
-					valid_output <= 1'b0;
+				end
+				BYTE_5: begin
+					buf_output[39:32] <= rx_output;
+				end
+				BYTE_6: begin
+					buf_output[47:40] <= rx_output;
+				end
+				BYTE_7: begin
+					buf_output[55:48] <= rx_output;
 				end
 				PROCESS_DATA: begin
-					output_data <= buf_output;
+					payload_data <= buf_output;
 					valid_output <= 1'b1;
 				end
 				default: begin
@@ -78,11 +104,31 @@ module DataAggregator (
 
 		case (curr_state)
 			WAITING_FOR_HEADER: next_state = ((rx_stb)&&(!rx_break)&&(!rx_perr)&&(!rx_ferr)&&(rx_output == 8'hF5)) ? CMD_BYTE : WAITING_FOR_HEADER;
-			CMD_BYTE: next_state = ((rx_stb)&&(!rx_break)&&(!rx_perr)&&(!rx_ferr)&&(rx_output == 8'h03)) ? POS_X_LSB : CMD_BYTE;
-			POS_X_LSB: next_state = ((rx_stb)&&(!rx_break)&&(!rx_perr)&&(!rx_ferr)) ? POS_X_MSB : POS_X_LSB;
-			POS_X_MSB: next_state = ((rx_stb)&&(!rx_break)&&(!rx_perr)&&(!rx_ferr)) ? POS_Y_LSB : POS_X_MSB;
-			POS_Y_LSB: next_state = ((rx_stb)&&(!rx_break)&&(!rx_perr)&&(!rx_ferr)) ? POS_Y_MSB : POS_Y_LSB;
-			POS_Y_MSB: next_state = ((rx_stb)&&(!rx_break)&&(!rx_perr)&&(!rx_ferr)) ? PROCESS_DATA : POS_Y_MSB;
+			CMD_BYTE: begin
+				if ((rx_stb)&&(!rx_break)&&(!rx_perr)&&(!rx_ferr)) begin
+					// Verify valid command byte
+					if (rx_output < 8'h04) begin
+						next_state = BYTE_1;
+					end else begin
+						next_state = WAITING_FOR_HEADER;
+					end
+				end
+			end
+			// On error, reject message
+			BYTE_1: next_state = ((rx_stb)&&(!rx_break)&&(!rx_perr)&&(!rx_ferr)) ? BYTE_2 : WAITING_FOR_HEADER;
+			BYTE_2: next_state = ((rx_stb)&&(!rx_break)&&(!rx_perr)&&(!rx_ferr)) ? BYTE_3 : WAITING_FOR_HEADER;
+			BYTE_3: next_state = ((rx_stb)&&(!rx_break)&&(!rx_perr)&&(!rx_ferr)) ? BYTE_4 : WAITING_FOR_HEADER;
+			BYTE_4: next_state = ((rx_stb)&&(!rx_break)&&(!rx_perr)&&(!rx_ferr)) ? BYTE_5 : WAITING_FOR_HEADER;
+			BYTE_5: begin
+				// If in symbol drawing mode, this is the end of the packet -> process data
+				if (!is_prog_mode) begin
+					next_state = ((rx_stb)&&(!rx_break)&&(!rx_perr)&&(!rx_ferr)) ? PROCESS_DATA : WAITING_FOR_HEADER;
+				end else begin
+					next_state = ((rx_stb)&&(!rx_break)&&(!rx_perr)&&(!rx_ferr)) ? BYTE_6 : WAITING_FOR_HEADER;
+				end
+			end
+			BYTE_6: next_state = ((rx_stb)&&(!rx_break)&&(!rx_perr)&&(!rx_ferr)) ? BYTE_7 : WAITING_FOR_HEADER;
+			BYTE_7: next_state = ((rx_stb)&&(!rx_break)&&(!rx_perr)&&(!rx_ferr)) ? PROCESS_DATA : WAITING_FOR_HEADER;
 			PROCESS_DATA: next_state = WAITING_FOR_HEADER;
 			default: next_state = WAITING_FOR_HEADER;
 		endcase

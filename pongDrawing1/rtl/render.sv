@@ -1,43 +1,67 @@
-module render (
-	input wire logic de,
-	input wire logic [15:0] sx,
-	input wire logic [15:0] sy,
-	input wire logic [31:0] uart_buf,
-	output wire logic [3:0] dispcolor_r,
-	output wire logic [3:0] dispcolor_g,
-	output wire logic [3:0] dispcolor_b
+/*  Render the specified pixel color
+	If not in program mode, draw a black screen
+*/
+module render #(PROG_PAYLD_PKT_BITS, NUM_SYM_SUPPTD_BITS) (
+	input logic de,
+	input logic [15:0] sx,
+	input logic [15:0] sy,
+	input logic is_prog_mode,
+	//input logic [PROG_PAYLD_PKT_BITS-1:0] prog_buffer [0:NUM_SYM_SUPPTD_BITS-1],
+	output logic [3:0] dispcolor_r,
+	output logic [3:0] dispcolor_g,
+	output logic [3:0] dispcolor_b
 	);
 
 	`include "display_timings.sv"
 
-	wire logic [15:0] sympos_x, sympos_y;
+	wire logic [15:0] rectwidth, rectheight;
+	wire logic [3:0] rectcolor_r, rectcolor_g, rectcolor_b;
 
-	assign sympos_x = uart_buf[15:0];
-	assign sympos_y = uart_buf[31:16];
+	//assign rectheight = prog_buffer[0][15:0]
+	//assign rectwidth = prog_buffer[0][31:16];
+	//assign rectcolor_r = prog_buffer[0][35:32];
+	//assign rectcolor_g = prog_buffer[0][39:36];
+	//assign rectcolor_b = prog_buffer[0][43:40];
+	localparam rectheight = 16'd200;
+	localparam rectwidth = 16'd150;
+	localparam rectcolor_r = 4'h3;
+	localparam rectcolor_g = 4'h1;
+	localparam rectcolor_b = 4'h2;
 
     // Drawing Logic
-    localparam rectwidth = 200;
-    localparam rectheight = 150;
+	localparam sympos_x = 200;
+	localparam sympos_y = 150;
     logic rectangle;
     always_comb begin
-        rectangle = (sx >= (HA_BACK_PORCH + sympos_x)) &&
-            (sx < (HA_BACK_PORCH + sympos_x + rectwidth)) &&
-            (sy >= (VA_BACK_PORCH + sympos_y)) &&
-            (sy < (VA_BACK_PORCH + sympos_y + rectheight));
+		if (is_prog_mode) begin
+        	rectangle = (sx >= (HA_BACK_PORCH + sympos_x)) &&
+        	    (sx < (HA_BACK_PORCH + sympos_x + rectwidth)) &&
+        	    (sy >= (VA_BACK_PORCH + sympos_y)) &&
+        	    (sy < (VA_BACK_PORCH + sympos_y + rectheight));
+		end else begin
+			// Don't draw anything
+			rectangle = 1'b0;
+		end
     end
 
     // Creating pixel colors
-    localparam rectcolor_r = 4'h6;
-    localparam rectcolor_g = 4'h3;
-    localparam rectcolor_b = 4'hf;
     localparam backcolor_r = 4'h1;
     localparam backcolor_g = 4'h4;
     localparam backcolor_b = 4'h2;
+
+	localparam blackcolor = 4'h0;
     logic [3:0] pixcolor_r, pixcolor_g, pixcolor_b;
     always_comb begin
-        pixcolor_r = (rectangle) ? rectcolor_r : backcolor_r;
-        pixcolor_g = (rectangle) ? rectcolor_g : backcolor_g;
-        pixcolor_b = (rectangle) ? rectcolor_b : backcolor_b;
+		if (is_prog_mode) begin
+        	pixcolor_r = (rectangle) ? rectcolor_r : backcolor_r;
+        	pixcolor_g = (rectangle) ? rectcolor_g : backcolor_g;
+        	pixcolor_b = (rectangle) ? rectcolor_b : backcolor_b;
+		end else begin
+			// Draw a black screen until symbol mode
+			pixcolor_r = blackcolor; 
+			pixcolor_g = blackcolor;
+			pixcolor_b = blackcolor;
+		end
     end
 
     localparam black_pix = 4'h0;

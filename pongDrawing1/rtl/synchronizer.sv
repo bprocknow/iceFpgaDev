@@ -2,11 +2,11 @@
 /*  Uses Double Flop Synchronization to synchronize uart and render events
 */
 module synchronizer (
-    input wire logic i_clk,
-	input wire logic n_vsync,
-	input wire logic valid_data,
-    input wire logic [31:0] uart_buf, 
-    output wire [31:0] render_pos
+    input logic i_clk,
+	input logic n_vsync,
+	input logic valid_data,
+    input logic [31:0] uart_buf, 
+    output logic [31:0] render_pos
 );
 
     reg [31:0] flop1, flop2;

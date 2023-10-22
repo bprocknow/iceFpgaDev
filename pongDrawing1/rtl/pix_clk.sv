@@ -1,7 +1,7 @@
 
 module pixel_clock(
-	input wire logic clk,	// 12 MHz clock
-	input wire logic rst,	// Reset line
+	input logic clk,	// 12 MHz clock
+	input logic rst,	// Reset line
 	output logic pix_clk, 	// 25.125 MHz clock
 	output logic pix_clk_lock,	// Pixel clock locked signal
 	);

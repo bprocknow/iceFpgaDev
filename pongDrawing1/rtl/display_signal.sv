@@ -1,7 +1,7 @@
 
-module display_signal(
-	input wire logic pix_clk,
-	input wire logic rst_pix,
+module display_signal (
+	input logic pix_clk,
+	input logic rst_pix,
 	output logic [15:0] sx,
 	output logic [15:0] sy,
 `ifndef SIMULATED
