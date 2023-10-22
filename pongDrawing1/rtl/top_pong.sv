@@ -16,8 +16,8 @@ module top_pong (
 
 	localparam MAX_PAYLD_PKT_BITS = 8'd56;	// Maximum bits in the payload of a packet
 	localparam PROG_PAYLD_PKT_BITS = 8'd48;	// Number of bits for all program cmd type attributes.  Doesn't include symbol ID, which is used to access the array to retrieve the attributes
-	localparam DRAW_PAYLD_PKT_BITS = 8'd40;	// Number of bits for all draw symbol cmd type data.  Doesn't include symbol ID, which is used to access teh array to retrieve the data.
-	localparam NUM_SYM_SUPPTD_BITS = 2;	// Number of symbols that can be drawn in one frame
+	//localparam DRAW_PAYLD_PKT_BITS = 8'd40;	// Number of bits for all draw symbol cmd type data.  Doesn't include symbol ID, which is used to access teh array to retrieve the data.
+	localparam NUM_SYM_SUPPTD = 2;	// Number of symbols that can be drawn in one frame
 
 /* ------------------ Clocks ---------------------- */
 
@@ -52,7 +52,7 @@ module top_pong (
 /* ---------------- UART -------------------- */
 
 	// Input and buffer UART communication to create aggregated packets containing non-header data for the specified command type
-	wire logic is_prog_mode;
+	wire logic is_sym_mode;
 	wire logic valid_output;
 	wire logic [MAX_PAYLD_PKT_BITS-1:0] payload_data; 
 	DataAggregator #(MAX_PAYLD_PKT_BITS) aggregate_inst (
@@ -61,28 +61,39 @@ module top_pong (
 		.i_setup(31'd60),					// Input - Clock divider (baud rate = i_clk / divider)
 		.i_uart_rx(i_uart_rx),				// Input - Uart input line
 		.valid_output(valid_output),		// Output - Indicates valid packet output. High for one clock cycle
-		.is_prog_mode(is_prog_mode),		// Output - Indicates whether the device is in symbol or program mode
+		.is_sym_mode(is_sym_mode),		// Output - Indicates whether the device is in symbol or program mode
 		.payload_data(payload_data)			// Output - packet containing non-header data (payload data)
 	);
 
 /* --------- Program / Symbol Buffer ------ */
 
-	
-
-	// Buffer the aggregated packets command attributes (All payload data except symbol ID)
-	// The command attributes are accessed by the symbol ID
-	logic [NUM_SYM_SUPPTD_BITS-1:0] valid_prog_idx;		// Indicates if the symbol ID of the program buffer contains initialized valid data
-	logic read_en;
-	
-	CommandBuffer #(MAX_PAYLD_PKT_BITS, PROG_PAYLD_PKT_BITS, NUM_SYM_SUPPTD_BITS) 
-	command_buf_inst (
+	// The command attributes are saved and accessed by the symbol ID.  Write address is 
+	// contained in the write packet in byte 0
+	logic [NUM_SYM_SUPPTD-1:0] valid_prog_idx;		// Indicates if the symbol ID of the program buffer contains initialized valid data
+	logic prog_re;
+	logic [NUM_SYM_SUPPTD-1:0] prog_raddr;
+	logic [PROG_PAYLD_PKT_BITS-1:0] prog_rdata;
+	CommandBuffer #(MAX_PAYLD_PKT_BITS, PROG_PAYLD_PKT_BITS, NUM_SYM_SUPPTD) 
+	prog_buf_inst (
 		.i_clk(pix_clk_25_125m),
 		.n_btn_rst(n_btn_rst),
-		.valid_input(valid_output),			// Input - Valid input packet to process
-		.is_prog_mode(is_prog_mode),		// Input - Indicates which buffer to put the packet data
-		.payload_data(payload_data),		// Input - Payload packet data to put in the buffer
-		.valid_prog_idx(valid_prog_idx),	// Output - Indicates whether the symbol ID index of the program buffer contains valid data
+		.we(valid_output),				// Input - Valid input packet to process
+		.wdata(payload_data),			// Input - Payload packet data to put in the buffer
+		.re(prog_re),
+		.raddr(prog_raddr),
+		.rdata(prog_rdata),
+		.valid_idx(valid_prog_idx),		// Output - Indicates whether the symbol ID index of the program buffer contains valid data
 	);
+
+	always_ff @(posedge pix_clk_25_125m or negedge n_btn_rst) begin
+		if (!n_btn_rst) begin
+			prog_re <= 1'b0;
+		end
+		else if (is_sym_mode) begin
+			prog_re <= 1'b1;
+			prog_raddr <= 2'b0;
+		end
+	end
 	
 
 /* --------------- Render -------------------- */
@@ -99,11 +110,12 @@ module top_pong (
 
 	// Generate pixel color from uart messages, display signals
 	wire logic [3:0] dispcolor_r, dispcolor_g, dispcolor_b;
-	render render_inst (
+	render #(PROG_PAYLD_PKT_BITS) render_inst (
 		.de(de),
 		.sx(sx),
 		.sy(sy),
-		.is_prog_mode(is_prog_mode),
+		.is_sym_mode(is_sym_mode),
+		.prog_buffer(prog_rdata),
 		.dispcolor_r(dispcolor_r),
 		.dispcolor_g(dispcolor_g),
 		.dispcolor_b(dispcolor_b)

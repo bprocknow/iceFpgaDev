@@ -7,9 +7,9 @@ VROOT   := $(VERILATOR_ROOT)
 EXT_UART_DIR := ../../external/wbuart32/bench/cpp
 INCS	:= -I$(RTLD)/obj_dir/ -I$(VROOT)/include -I/usr/lib/SDL2 -I$(EXT_UART_DIR)
 EXT_SRCS := uartsim.cpp
-SHARED_SOURCES := testbench.cpp tracebench.cpp clientuart.cpp render.cpp
+SHARED_SOURCES := testbench.cpp tracebench.cpp clientuart.cpp render.cpp clientinterface.cpp
 SOURCES := $(SHARED_SOURCES) $(EXT_UART_DIR)/uartsim.cpp main_pong.cpp 
-HEADERS := tracebench.h testbench.h clientuart.h render.h $(EXT_UART_DIR)/uartsim.h
+HEADERS := tracebench.h testbench.h clientuart.h render.h clientinterface.h $(EXT_UART_DIR)/uartsim.h
 VOBJDR	:= $(RTLD)/obj_dir
 SYSVDR	:= $(VROOT)/include
 ## }}}

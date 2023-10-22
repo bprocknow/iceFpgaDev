@@ -1,44 +1,50 @@
 
-/*	Inputs full packets per the ICD and buffers them in the appropriate location
+/*	R/W Buffer to store arbitrary data.  Parameterized by parameters that configure
+	the amount of elements to store in the buffer, input write buffer sizes, and size
+	of elements to store in the buffer
 
+	This is a two port buffer.
 */
-module CommandBuffer # (
-	parameter MAX_PAYLD_PKT_BITS,
-	parameter PROG_PAYLD_PKT_BITS,
-	parameter NUM_SYM_SUPPTD_BITS,
-	localparam CMD_TYPES = 2
+module CommandBuffer #(
+		parameter MAX_PAYLD_PKT_BITS,	// Input packet number of bits to store
+		parameter BUFFER_PKT_BITS,		// Number of bits used for each element of the buffer
+		parameter NUM_SYM_SUPPTD		// Number of bits req'd to store the elements of the buffer
 	) (
-	input logic i_clk,
-	input logic n_btn_reset,
-	input logic valid_input,		// Indicates that a new command packet is valid
-	input logic is_prog_mode,
-	input logic [MAX_PAYLD_PKT_BITS-1:0] payload_data,
-	output logic [NUM_SYM_SUPPTD_BITS-1:0] valid_prog_idx,
-	output logic [PROG_PAYLD_PKT_BITS-1:0] prog_buffer [0:NUM_SYM_SUPPTD_BITS-1]
+		input logic i_clk,
+		input logic n_btn_rst,
+		input logic we,										// Write enable
+		/* verilator lint_off UNUSED */
+		input logic [MAX_PAYLD_PKT_BITS-1:0] wdata,			// Write Data.  0th byte is write address
+		input logic re,										// Read enable
+		input logic [NUM_SYM_SUPPTD-1:0] raddr,		// Read address
+		output logic [BUFFER_PKT_BITS-1:0] rdata,			// Outputted data requested by read port
+		output logic [NUM_SYM_SUPPTD-1:0] valid_idx	// Indicates whether the index has data previously written to it
 	);
 
-	// Supported command types have the symbol ID at index 0 of the payload data packet
-	wire logic [NUM_SYM_SUPPTD_BITS-1:0] symbol_id;
-	assign symbol_id = payload_data[7:0];
-	
+	// Symbol ID is the write address of the message.  All messages have the symbol ID in the 0th byte
+	/* verilator lint_off UNUSED */
+	wire logic [(NUM_SYM_SUPPTD-1):0] sym_id;
+	assign sym_id = wdata[(NUM_SYM_SUPPTD-1):0];
+
+	// Buffer used to write/read to/from
+	logic [(BUFFER_PKT_BITS-1):0] cmd_buffer [0:NUM_SYM_SUPPTD];
+
 	always_ff @(posedge i_clk or negedge n_btn_rst) begin
 		if (!n_btn_rst) begin
 
-			// Invalidate the program buffer
-			valid_prog_idx <= 8'h0;
+			// Invalidate all elements of the buffer
+			valid_idx <= {(NUM_SYM_SUPPTD){1'd0}};
 
-		end else if (valid_input) begin
-			// Add the inputted payload packet data to the cooresponding buffer
-
-			if (is_prog_mode) begin
-
+		end else begin
+			if (we) begin
+				// Store the incoming data at the specified position, except the symbol ID
+				cmd_buffer[sym_id] <= wdata[BUFFER_PKT_BITS+7:8];
 				// Assign symbol attribute data (not symbol ID) to the program attribute buffer at the index of the symbol ID
-				prog_buffer[symbol_id] <= payload_data[PROG_PAYLD_PKT_BITS+7:8];
-				valid_prog_idx[symbol_id] = 1'b1;
+				valid_idx <= valid_idx | sym_id;
 			end
-//			end else begin
-//
-//			end
+			if (re) begin
+				rdata <= cmd_buffer[raddr];
+			end
 		end
 	end
 	

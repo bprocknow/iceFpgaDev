@@ -34,7 +34,7 @@ ClientUart::~ClientUart() {
 
 /* Write message to server simulation socket
 */
-void ClientUart::wrToServer(char *msg, int len) {
+void ClientUart::wrToServer(uint8_t *msg, int len) {
 
 	if (write(clientSocket, msg, len) != len) {
 		std::cerr << "Error occurred while writing to the simulation" << std::endl;
@@ -43,7 +43,7 @@ void ClientUart::wrToServer(char *msg, int len) {
 
 /* Read message from server simulation socket
 */
-void ClientUart::rdFromServer(char *buf, int size) {
+void ClientUart::rdFromServer(uint8_t *buf, int size) {
 
 	if (read(clientSocket, buf, size) < 0) {
 		std::cerr << "Error reading data from the simulation" << std::endl;

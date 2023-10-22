@@ -1,12 +1,13 @@
 /*  Render the specified pixel color
 	If not in program mode, draw a black screen
 */
-module render #(PROG_PAYLD_PKT_BITS, NUM_SYM_SUPPTD_BITS) (
+module render #(PROG_PAYLD_PKT_BITS) (
 	input logic de,
 	input logic [15:0] sx,
 	input logic [15:0] sy,
-	input logic is_prog_mode,
-	//input logic [PROG_PAYLD_PKT_BITS-1:0] prog_buffer [0:NUM_SYM_SUPPTD_BITS-1],
+	input logic is_sym_mode,
+	/* verilator lint_off UNUSED */
+	input logic [PROG_PAYLD_PKT_BITS-1:0] prog_buffer,
 	output logic [3:0] dispcolor_r,
 	output logic [3:0] dispcolor_g,
 	output logic [3:0] dispcolor_b
@@ -17,23 +18,18 @@ module render #(PROG_PAYLD_PKT_BITS, NUM_SYM_SUPPTD_BITS) (
 	wire logic [15:0] rectwidth, rectheight;
 	wire logic [3:0] rectcolor_r, rectcolor_g, rectcolor_b;
 
-	//assign rectheight = prog_buffer[0][15:0]
-	//assign rectwidth = prog_buffer[0][31:16];
-	//assign rectcolor_r = prog_buffer[0][35:32];
-	//assign rectcolor_g = prog_buffer[0][39:36];
-	//assign rectcolor_b = prog_buffer[0][43:40];
-	localparam rectheight = 16'd200;
-	localparam rectwidth = 16'd150;
-	localparam rectcolor_r = 4'h3;
-	localparam rectcolor_g = 4'h1;
-	localparam rectcolor_b = 4'h2;
+	assign rectheight = prog_buffer[15:0];
+	assign rectwidth = prog_buffer[31:16];
+	assign rectcolor_r = prog_buffer[35:32];
+	assign rectcolor_g = prog_buffer[39:36];
+	assign rectcolor_b = prog_buffer[43:40];
 
     // Drawing Logic
-	localparam sympos_x = 200;
-	localparam sympos_y = 150;
+	localparam sympos_x = 50;
+	localparam sympos_y = 50;
     logic rectangle;
     always_comb begin
-		if (is_prog_mode) begin
+		if (is_sym_mode) begin
         	rectangle = (sx >= (HA_BACK_PORCH + sympos_x)) &&
         	    (sx < (HA_BACK_PORCH + sympos_x + rectwidth)) &&
         	    (sy >= (VA_BACK_PORCH + sympos_y)) &&
@@ -52,7 +48,7 @@ module render #(PROG_PAYLD_PKT_BITS, NUM_SYM_SUPPTD_BITS) (
 	localparam blackcolor = 4'h0;
     logic [3:0] pixcolor_r, pixcolor_g, pixcolor_b;
     always_comb begin
-		if (is_prog_mode) begin
+		if (is_sym_mode) begin
         	pixcolor_r = (rectangle) ? rectcolor_r : backcolor_r;
         	pixcolor_g = (rectangle) ? rectcolor_g : backcolor_g;
         	pixcolor_b = (rectangle) ? rectcolor_b : backcolor_b;

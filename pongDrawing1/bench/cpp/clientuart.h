@@ -6,9 +6,9 @@ private:
 	int clientSocket;
 public:
 	ClientUart(int uartPort);
-	~ClientUart(void);
-	void wrToServer(char *msg, int len);
-	void rdFromServer(char *buf, int size);
+	virtual ~ClientUart(void);
+	void wrToServer(uint8_t *msg, int len);
+	void rdFromServer(uint8_t *buf, int size);
 };
 
 #endif
