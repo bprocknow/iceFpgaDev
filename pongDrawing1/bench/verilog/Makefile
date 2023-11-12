@@ -9,12 +9,12 @@ VERILATOR := verilator
 VFLAGS := -Wall --MMD --trace -y $(RTLDR) -cc
 UART_EXT := ../../external/wbuart32/rtl
 
-.PHONY: testpong
-all: testpong 
+.PHONY: sim_graphics
+all: sim_graphics
 
-testpong:      $(VDIRFB)/Vtestpong__ALL.a
+sim_graphics:      $(VDIRFB)/Vsim_graphics__ALL.a
 
-$(VDIRFB)/Vtestpong__ALL.a:     $(VDIRFB)/Vtestpong.cpp
+$(VDIRFB)/Vsim_graphics__ALL.a:     $(VDIRFB)/Vsim_graphics.cpp
 
 ## Verilate build instructions
 #$(VDIRFB)/V%.mk:  $(VDIRFB)/V%.h
@@ -22,8 +22,8 @@ $(VDIRFB)/Vtestpong__ALL.a:     $(VDIRFB)/Vtestpong.cpp
 #$(VDIRFB)/V%.cpp: $(FBDIR)/%.v
 #	$(VERILATOR) $(VFLAGS) $*.v
 
-$(VDIRFB)/Vtestpong.cpp: $(FBDIR)/testpong.sv
-	$(VERILATOR) $(VFLAGS) -DSIMULATED -I. -I$(UART_EXT) --prefix Vtestpong testpong.sv
+$(VDIRFB)/Vsim_graphics.cpp: $(FBDIR)/sim_graphics.sv
+	$(VERILATOR) $(VFLAGS) -DSIMULATED -I. -I$(UART_EXT) --prefix Vsim_graphics sim_graphics.sv
 
 ## Turn C++ to libraries
 $(VDIRFB)/V%__ALL.a: $(VDIRFB)/V%.cpp

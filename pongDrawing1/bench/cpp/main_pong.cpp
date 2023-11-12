@@ -1,14 +1,16 @@
 #include <SDL2/SDL.h>
 #include <iostream>
+#include <time.h>
 #include <verilated.h>
 #include <signal.h>
 #include <chrono>
-#include "Vtestpong.h"
+#include "Vsim_graphics.h"
 #include "testbench.h"
 #include "tracebench.h"
 #include "uartsim.h"
 #include "clientinterface.h"
 #include "render.h"
+#include "timer.h"
 
 const int uartPort = 50020;
 const int divisor = 868;		// Uart clock divisor
@@ -86,13 +88,31 @@ int main(int argc, char* argv[]) {
 
 	std::cout << "Writing to simulation:" << std::endl;	
 
-	cIface.ProgramSymbol(0, 200, 300, 0xD, 0xB, 0x0);
 	sleep(1);
+
+	cIface.ProgramSymbol(1, 10, 10, 0xF, 0x0, 0xF);
 
 	std::cout<<"Setting symbol mode"<<std::endl;
 
 	cIface.SetSymMode();
-	sleep(3);
+
+	timer processTimer;
+
+	processTimer.startTimer();
+
+	long long processDurationMs = 15000;
+
+	int xPos = 5;
+
+	while (processTimer.getDuration() < processDurationMs) {
+
+		cIface.DrawSymbol(1, xPos, 10);
+
+		xPos += 10;
+		if (xPos > H_RENDR) {
+			xPos = 0;
+		}
+	}
 
 	kill(child_pid, SIGTERM);
 	

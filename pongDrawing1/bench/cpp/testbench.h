@@ -2,7 +2,7 @@
 #define TESTBENCH
 
 #include "SDL2/SDL.h"
-#include "Vtestpong.h"
+#include "Vsim_graphics.h"
 
 class Testbench {
 protected:
@@ -12,7 +12,7 @@ protected:
     const Uint8 *keyb_state;
 public:
     // initialize Verilog module
-    Vtestpong* top;
+    Vsim_graphics* top;
 
     Testbench();
     virtual ~Testbench();

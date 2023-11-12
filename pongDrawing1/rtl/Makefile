@@ -10,7 +10,7 @@ PCF = icebreaker.pcf
 SRC_NAME = top_graphicsprocessor
 
 # included modules
-ADD_SRC = display_signal.sv pix_clk.sv render.sv DataAggregator.sv synchronizer.sv CommandBuffer.sv
+ADD_SRC = display_signal.sv pix_clk.sv render.sv DataAggregator.sv synchronizer.sv CommandBuffer.sv framebuf_manager.sv RAM256X32.sv RAM256X12.sv
 ADD_SRC += ../external/wbuart32/rtl/txuart.v
 ADD_SRC += ../external/wbuart32/rtl/rxuart.v
 

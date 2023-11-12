@@ -1,23 +1,27 @@
-module top_graphicsprocessor (
+module top_graphicsprocessor #(
+	localparam BITS_PER_COLOR = 4
+	) (
 	input logic n_btn_rst,	// Reset button
 	input logic clk_12m, 	// 12MHz clock
 	input logic i_uart_rx,	// UART Input
-	output logic o_uart_tx,// UART Output
+	output logic vsync_irq,
 	output logic dvi_clk,
 	output logic dvi_hsync,
 	output logic dvi_vsync,
 	output logic dvi_de,
-	output logic [3:0] dvi_r,
-	output logic [3:0] dvi_g,
-	output logic [3:0] dvi_b
+	output logic [BITS_PER_COLOR-1:0] dvi_r,
+	output logic [BITS_PER_COLOR-1:0] dvi_g,
+	output logic [BITS_PER_COLOR-1:0] dvi_b
 	);
+
+	`include "display_timings.sv"
 
 /* ------------------ Local Parameters --------------------- */
 
+	/* ------ Packet parameters ------- */
 	localparam MAX_PAYLD_PKT_BITS = 8'd56;	// Maximum bits in the payload of a packet
-	localparam PROG_PAYLD_PKT_BITS = 8'd48;	// Number of bits for all program cmd type attributes.  Doesn't include symbol ID, which is used to access the array to retrieve the attributes
 	localparam DRAW_PAYLD_PKT_BITS = 8'd40;	// Number of bits for all draw symbol cmd type data.  Doesn't include symbol ID, which is used to access teh array to retrieve the data.
-	localparam NUM_SYM_SUPPTD = 2;			// Number of symbols that can be drawn in one frame
+	localparam NUM_SYM_SUPPTD_BITS = 8;			// Number of symbols that can be drawn in one frame
 
 /* ------------------ Clocks ---------------------- */
 
@@ -49,76 +53,72 @@ module top_graphicsprocessor (
 		.n_vsync(n_vsync)			// Output - Is *not* in vsync area
 	);
 
-/* ---------------- UART -------------------- */
+/* ------------ UART Packet Aggregation --------------- */
 
 	// Input and buffer UART communication to create aggregated packets containing non-header data for the specified command type
 	wire logic is_sym_mode;
 	wire logic valid_output;
-	wire logic [MAX_PAYLD_PKT_BITS-1:0] payload_data; 
+	wire logic [MAX_PAYLD_PKT_BITS-1:0] pld_packet_data; 
 	DataAggregator #(MAX_PAYLD_PKT_BITS) aggregate_inst (
 		.i_clk(pix_clk_25_125m),
 		.n_btn_rst(n_btn_rst),
-		.i_setup(31'd60),					// Input - Clock divider (baud rate = i_clk / divider)
+		.i_setup(31'd30),					// Input - Clock divider (baud rate = i_clk / divider)
 		.i_uart_rx(i_uart_rx),				// Input - Uart input line
 		.valid_output(valid_output),		// Output - Indicates valid packet output. High for one clock cycle
 		.is_sym_mode(is_sym_mode),			// Output - Indicates whether the device is in symbol or program mode
-		.payload_data(payload_data)			// Output - packet containing non-header data (payload data)
+		.pld_packet_data(pld_packet_data)	// Output - packet containing non-header data (payload data)
 	);
 
-/* --------- Program / Symbol Buffer ------ */
+/* ------------------- VSYNC IRQ ---------------------- */
 
-	// The command attributes are saved and accessed by the symbol ID.  Write address is 
-	// contained in the write packet in byte 0
-	logic [NUM_SYM_SUPPTD-1:0] valid_prog_idx;		// Indicates if the symbol ID of the program buffer contains initialized valid data
-	logic prog_re;
-	logic [NUM_SYM_SUPPTD-1:0] prog_raddr;
-	logic [PROG_PAYLD_PKT_BITS-1:0] prog_rdata;
-	CommandBuffer #(MAX_PAYLD_PKT_BITS, PROG_PAYLD_PKT_BITS, NUM_SYM_SUPPTD) 
-	prog_buf_inst (
-		.i_clk(pix_clk_25_125m),
-		.n_btn_rst(n_btn_rst),
-		.we(valid_output),				// Input - Valid input packet to process
-		.wdata(payload_data),			// Input - Payload packet data to put in the buffer
-		.re(prog_re),					// Input - Read enable
-		.raddr(prog_raddr),				// Input - Read address in buffer
-		.rdata(prog_rdata),				// Output - Read data from buffer specified by address
-		.valid_idx(valid_prog_idx),		// Output - Indicates whether the symbol ID index of the program buffer contains valid data
-	);
-
+	// Set interrupt when done rendering the current frame
+	// Clear interrupt when it recieves a valid packet and a new frame from when the 
+	// interrupt was set has occurred
+	logic isNewFrame;
 	always_ff @(posedge pix_clk_25_125m or negedge n_btn_rst) begin
 		if (!n_btn_rst) begin
-			prog_re <= 1'b0;
-		end
-		else if (is_sym_mode) begin
-			prog_re <= 1'b1;
-			prog_raddr <= 2'b0;
+			vsync_irq <= 1'b1;
+			isNewFrame <= 1'b1;
+		end else if (vsync_irq) begin
+			// Clear interrupt on recieving valid packet
+			if (valid_output) begin
+				vsync_irq <= 1'b0;
+			end
+		end else begin
+			if (sx == 0 && sy == 0) begin
+				// Save new frames, only allow interrupts after a new frame has occurred
+				isNewFrame <= 1'b1;
+			end else if (isNewFrame && sx >= HA_ACTIVE_PIX && sy >= VA_ACTIVE_PIX) begin
+				// Set interrupt after the current frame has been rendered
+				vsync_irq <= 1'b1;
+				isNewFrame <= 1'b0;
+			end
 		end
 	end
-	
-/* --------------- Render -------------------- */
-	
-	// Synchronize UART messaging and rendering (vsync)
-	//reg [31:0] render_pos;
-	//synchronizer sync_uart_render (
-	//	.i_clk(pix_clk_25_125m),
-	//	.n_vsync(n_vsync),
-	//	.valid_data(valid_output),
-	//	.uart_buf(output_data),
-	//	.render_pos(render_pos)
-	//);
+
+/* ------------------ Front/Back frame buffer ------------- */
 
 	// Generate pixel color from uart messages, display signals
 	wire logic [3:0] dispcolor_r, dispcolor_g, dispcolor_b;
-	render #(PROG_PAYLD_PKT_BITS) render_inst (
-		.de(de),						// Input - display enable.  Indicates that the pixel positon (sx, sy) is actually being drawn
-		.sx(sx),						// Input - position x on framebuffer
-		.sy(sy),						// Input - position y on framebuffer
-		.is_sym_mode(is_sym_mode),		// Input - Is the system in symbol mode
-		.prog_buffer(prog_rdata),		// Input - Program data to draw
-		.dispcolor_r(dispcolor_r),		// Output - (sx, sy) pixel color red
-		.dispcolor_g(dispcolor_g),		// Output - (sx, sy) pixel color green
-		.dispcolor_b(dispcolor_b)		// Output - (sx, sy) pixel color blue
+	framebuf_manager #(
+		MAX_PAYLD_PKT_BITS,
+		DRAW_PAYLD_PKT_BITS,
+		NUM_SYM_SUPPTD_BITS,
+		BITS_PER_COLOR
+	) framebuf_manager_inst (
+		.i_clk(pix_clk_25_125m),
+		.n_btn_rst(n_btn_rst),
+		.is_sym_mode(is_sym_mode),
+		.valid_pld_packet(valid_output),
+		.pld_packet_data(pld_packet_data),
+		.draw_en(de),
+		.sx(sx),
+		.sy(sy),
+		.dispcolor_r(dispcolor_r),
+		.dispcolor_g(dispcolor_g),
+		.dispcolor_b(dispcolor_b)
 	);
+
 
 	// DVI Pmod output - Use render signals to draw current pixel
 	SB_IO #(

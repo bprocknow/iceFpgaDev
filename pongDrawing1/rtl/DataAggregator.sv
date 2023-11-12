@@ -6,8 +6,7 @@
 	valid_output:  Indicates that there is a valid output aggregated packet
 */
 module DataAggregator #(
-		parameter MAX_PAYLD_PKT_BITS,		// Maximum packet bits (payload only)
-		localparam MAX_LEN_CMD = 9			// Maximum length full input command in bytes
+		parameter MAX_PAYLD_PKT_BITS		// Maximum packet bits (payload only)
 	) (
 		input logic i_clk,
 		input logic n_btn_rst,
@@ -15,8 +14,10 @@ module DataAggregator #(
 		input logic i_uart_rx,
 		output logic valid_output,		// Indicates that the outputted byte is valid
 		output logic is_sym_mode,
-		output logic [MAX_PAYLD_PKT_BITS-1:0] payload_data	// Non-header payload data
+		output logic [MAX_PAYLD_PKT_BITS-1:0] pld_packet_data	// Non-header payload data
 	);
+
+	localparam MAX_LEN_CMD = 9;			// Maximum length full input command in bytes
 
 	// All input command bytes have a state + one to process data
 	typedef enum logic [MAX_LEN_CMD+1:0] {
@@ -41,7 +42,7 @@ module DataAggregator #(
 
 	UartState curr_state, next_state;
 
-	rxuart reciever (i_clk, pwr_reset, i_setup, i_uart_rx, rx_stb, rx_output, rx_break, rx_perr, rx_ferr, rx_ignored);
+	rxuart #(31'd30) reciever (i_clk, pwr_reset, i_setup, i_uart_rx, rx_stb, rx_output, rx_break, rx_perr, rx_ferr, rx_ignored);
 
 	always_ff @(posedge i_clk or negedge n_btn_rst) begin
 		if (!n_btn_rst) begin
@@ -49,7 +50,7 @@ module DataAggregator #(
 			curr_state <= WAITING_FOR_HEADER;
 			valid_output <= 1'b0;
 			is_sym_mode <= 1'b0;
-			payload_data <= {(MAX_PAYLD_PKT_BITS){1'd0}};
+			pld_packet_data <= {(MAX_PAYLD_PKT_BITS){1'd0}};
 		end else if (curr_state == CMD_BYTE) begin
 
 			pwr_reset <= 1'b0;
@@ -92,7 +93,7 @@ module DataAggregator #(
 					buf_output[55:48] <= rx_output;
 				end
 				PROCESS_DATA: begin
-					payload_data <= buf_output;
+					pld_packet_data <= buf_output;
 					valid_output <= 1'b1;
 				end
 				default: begin

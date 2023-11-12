@@ -1,9 +1,10 @@
 #include <SDL2/SDL.h>
 #include <iostream>
+#include "Vsim_graphics.h"
 #include "testbench.h"
 
 Testbench::Testbench() {
-	top = new Vtestpong();
+	top = new Vsim_graphics();
 
 	keyb_state = SDL_GetKeyboardState(NULL);
 }

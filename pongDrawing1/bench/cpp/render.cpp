@@ -13,7 +13,7 @@ Render::Render() {
     }
 
     sdl_window = SDL_CreateWindow("Square", SDL_WINDOWPOS_CENTERED,
-        SDL_WINDOWPOS_CENTERED, H_RES, V_RES, SDL_WINDOW_SHOWN);
+        SDL_WINDOWPOS_CENTERED, H_TOT_PIX, V_TOT_PIX, SDL_WINDOW_SHOWN);
     if (!sdl_window) {
         printf("Window creation failed: %s\n", SDL_GetError());
         exit(1);
@@ -53,7 +53,7 @@ bool Render::isNewFrame(Testbench& testbench) {
 
 void Render::updatePixel (Testbench& testbench) {
     if (testbench.top->sdl_de) {
-		Pixel* p = &screenbuffer[(testbench.top->sdl_sy - VA_BACK_PORCH) * H_RES + (testbench.top->sdl_sx - HA_BACK_PORCH)];
+		Pixel* p = &screenbuffer[(testbench.top->sdl_sy) * H_TOT_PIX + (testbench.top->sdl_sx)];
         p->a = 0xFF;  // transparency
         p->b = testbench.top->sdl_b;
         p->g = testbench.top->sdl_g;
@@ -76,7 +76,7 @@ void Render::renderFrame(Testbench& testbench) {
 
 	
 	if (isNewFrame(testbench)) {
-    	SDL_UpdateTexture(sdl_texture, NULL, screenbuffer, H_RES*sizeof(Pixel));
+    	SDL_UpdateTexture(sdl_texture, NULL, screenbuffer, H_TOT_PIX*sizeof(Pixel));
     	SDL_RenderClear(sdl_renderer);
     	SDL_RenderCopy(sdl_renderer, sdl_texture, NULL, NULL);
     	SDL_RenderPresent(sdl_renderer);

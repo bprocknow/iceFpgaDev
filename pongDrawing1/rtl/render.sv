@@ -1,23 +1,22 @@
 /*  Render the specified pixel color
 	If not in program mode, draw a black screen
 */
-module render #(PROG_PAYLD_PKT_BITS) (
-
+module render #(BITS_PER_COLOR, PROG_PAYLD_PKT_BITS) (
 	input logic de,
 	input logic [15:0] sx,
 	input logic [15:0] sy,
 	input logic is_sym_mode,
 	/* verilator lint_off UNUSED */
 	input logic [PROG_PAYLD_PKT_BITS-1:0] prog_buffer,
-	output logic [3:0] dispcolor_r,
-	output logic [3:0] dispcolor_g,
-	output logic [3:0] dispcolor_b
+	output logic [BITS_PER_COLOR-1:0] dispcolor_r,
+	output logic [BITS_PER_COLOR-1:0] dispcolor_g,
+	output logic [BITS_PER_COLOR-1:0] dispcolor_b
 	);
 
 	`include "display_timings.sv"
 
 	wire logic [15:0] rectwidth, rectheight;
-	wire logic [3:0] rectcolor_r, rectcolor_g, rectcolor_b;
+	wire logic [BITS_PER_COLOR-1:0] rectcolor_r, rectcolor_g, rectcolor_b;
 
 	assign rectheight = prog_buffer[15:0];
 	assign rectwidth = prog_buffer[31:16];
@@ -47,7 +46,7 @@ module render #(PROG_PAYLD_PKT_BITS) (
     localparam backcolor_b = 4'h2;
 
 	localparam blackcolor = 4'h0;
-    logic [3:0] pixcolor_r, pixcolor_g, pixcolor_b;
+    logic [BITS_PER_COLOR-1:0] pixcolor_r, pixcolor_g, pixcolor_b;
     always_comb begin
 		if (is_sym_mode) begin
         	pixcolor_r = (rectangle) ? rectcolor_r : backcolor_r;
