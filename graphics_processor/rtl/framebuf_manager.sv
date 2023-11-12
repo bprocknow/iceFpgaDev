@@ -164,7 +164,7 @@ module framebuf_manager #(
 	logic [DRAW_PAYLD_PKT_BITS-1:0] sym_curr_rdata;
 	// For each symbol command, keep track of which pixel of the symbol is being drawn
 	//  to the back buffer.  The 15th bit indicates whether to use the first or second SPRAM buf
-	logic [14:0] nxt_rndr_sym_px_cntr;
+	logic [14:0] rendersym_pix_cntr;
 	logic [14:0] drawsym_pix_cntr;
 
 	typedef enum logic [1:0] {
@@ -188,13 +188,13 @@ module framebuf_manager #(
 	assign drawsym_pkt_sym_id[15:8] = 8'h0;
 	assign drawsym_pkt_sym_id[7:0] = sym_curr_rdata[7:0];
 
-	// Stores the 15th bit of nxt_rndr_sym_px_cntr / drawsym_pix_cntr to indicate 
+	// Stores the 15th bit of rendersym_pix_cntr / drawsym_pix_cntr to indicate 
 	// whether to use the first/second SPRAM buffer
-	// nxt_rndr_sym_px_cntr is used for reading from the front buffer (isSecondRBuffer)
+	// rendersym_pix_cntr is used for reading from the front buffer (isSecondRBuffer)
 	// drawsym_pix_cntr is used for writing to the back buffer (isSecondWBuffer)
 	logic isSecondWBuffer, isSecondRBuffer;
 	assign isSecondWBuffer = drawsym_pix_cntr[14];
-	assign isSecondRBuffer = nxt_rndr_sym_px_cntr[14];
+	assign isSecondRBuffer = rendersym_pix_cntr[14];
 
 	logic weFirstBuffer, weSecondBuffer;
 	always_comb begin
@@ -306,7 +306,7 @@ module framebuf_manager #(
 	logic [15:0] row_cntr, col_cntr;
 	assign row_cntr = ((sy - VA_BACK_PORCH) / MIN_PIX_SZ);
 	assign col_cntr = ((sx - HA_BACK_PORCH) / MIN_PIX_SZ);
-	assign nxt_rndr_sym_px_cntr = col_cntr[14:0] + ((row_cntr[14:0]) * HA_RENDERED_PIX);
+	assign rendersym_pix_cntr = col_cntr[14:0] + ((row_cntr[14:0]) * HA_RENDERED_PIX);
 
 	// Output symbol ID of first (f)/second (s) framebuffer, first (f)/second (s) buffer
 	/* verilator lint_off UNUSEDSIGNAL */
@@ -390,7 +390,7 @@ module framebuf_manager #(
 	assign isClearSSFB = (!isRndrFirstFbuf && isSecondRBuffer && draw_en && clearCurrPixel);
 
 	// ADDRESS:
-	// When front buffer, read using nxt_rndr_sym_px_cntr
+	// When front buffer, read using rendersym_pix_cntr
 	// When back buffer, write to drawsym_pix_cntr
 
 	// WREN:
@@ -401,7 +401,7 @@ module framebuf_manager #(
 	/* ------- Framebuffer One ------- */
 
 	SB_SPRAM256KA spram_fb_one_inst_one (
-		.ADDRESS(isRndrFirstFbuf ? nxt_rndr_sym_px_cntr[13:0] : drawsym_pix_cntr[13:0]),
+		.ADDRESS(isRndrFirstFbuf ? rendersym_pix_cntr[13:0] : drawsym_pix_cntr[13:0]),
 		.DATAIN(isRndrFirstFbuf ? 16'd0 : drawsym_pkt_sym_id),
 		.MASKWREN(4'b1111),		// Enable all nibbles for writing
 		.WREN(isClearFFFB || isWriteFFBB),
@@ -414,7 +414,7 @@ module framebuf_manager #(
 	);
 
 	SB_SPRAM256KA spram_fb_two_inst_two (
-		.ADDRESS(isRndrFirstFbuf ? nxt_rndr_sym_px_cntr[13:0] : drawsym_pix_cntr[13:0]),
+		.ADDRESS(isRndrFirstFbuf ? rendersym_pix_cntr[13:0] : drawsym_pix_cntr[13:0]),
 		.DATAIN(isRndrFirstFbuf ? 16'd0 : drawsym_pkt_sym_id),
 		.MASKWREN(4'b1111),		// Enable all nibbles for writing
 		.WREN(isClearFSFB || isWriteFSBB),
@@ -429,7 +429,7 @@ module framebuf_manager #(
 	/* ------- Framebuffer Two ------- */
 	
 	SB_SPRAM256KA spram_fb_two_inst_one (
-		.ADDRESS(isRndrFirstFbuf ? drawsym_pix_cntr[13:0] : nxt_rndr_sym_px_cntr[13:0]),
+		.ADDRESS(isRndrFirstFbuf ? drawsym_pix_cntr[13:0] : rendersym_pix_cntr[13:0]),
 		.DATAIN(isRndrFirstFbuf ? drawsym_pkt_sym_id : 16'd0),
 		.MASKWREN(4'b1111),		// Enable all nibbles for writing
 		.WREN(isClearSFFB || isWriteSFBB),
@@ -442,7 +442,7 @@ module framebuf_manager #(
 	);
 
 	SB_SPRAM256KA spram_fb_one_inst_two (
-		.ADDRESS(isRndrFirstFbuf ? drawsym_pix_cntr[13:0] : nxt_rndr_sym_px_cntr[13:0]),
+		.ADDRESS(isRndrFirstFbuf ? drawsym_pix_cntr[13:0] : rendersym_pix_cntr[13:0]),
 		.DATAIN(isRndrFirstFbuf ? drawsym_pkt_sym_id : 16'd0),
 		.MASKWREN(4'b1111),		// Enable all nibbles for writing
 		.WREN(isClearSSFB || isWriteSSBB),
