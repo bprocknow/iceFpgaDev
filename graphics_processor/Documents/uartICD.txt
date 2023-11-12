@@ -1,0 +1,57 @@
+
+Interface Control Document for UART messages
+
+------------------- Modes of Operation: -------------------
+1.) Programming Mode:  In programming mode, the FPGA will input a list of symbols that can be referenced in display mode.
+This list of symbols has various attributes that describe how the symbol will be rendered.
+
+2.) Display Mode:  In display mode, the user application can tell the FPGA how it should render the defined symbols using the supported attributes.
+
+------------------- Notes --------------------------------
+
+** Symbol ID 0 cannot be used.  1-127 are acceptable.
+
+** Symbol height and width are subtracted by one.  For example, a symbol height 
+		 of 0 will use the minimum number of pixels (MIN_PIX_SZ).
+
+------------------- Supported Command Bytes: --------------
+
+1.) Program Mode Symbol Definition:  List the symbols with attributes to render in display mode.
+
+2.) Operation Mode:  Swap from program to display mode.
+
+3.) Display Symbol:  Specify how to render the specifed symbol in display mode.
+
+------------------- HEADER --------------------------------	
+
+Byte #				Value				Description
+0					0xF5				Header byte to indicate start of transmission
+1					Command Byte		Indicates the type of message this is
+										0x01 - Program Symbol Definition
+										0x02 - Switch to Symbol Render Mode
+										0x03 - Draw Symbols
+
+------------------- PAYLOAD -------------------------------
+
+				**** Program Symbol Definition (0x01) ****
+2					<Symbol ID>			Symbol ID used to uniquely identify symbol
+										Bits 0-6 - Symbol ID
+3					<Symbol Height LSB>	**Symbol height in pixels LSB
+4					<Symbol Height MSB>	**Symbol height in pixels MSB
+5					<Symbol Width LSB>	**Symbol width in pixels LSB
+6					<Symbol Width MSB> 	**Symbol width in pixels MSB
+7					<Symbol Color 1>	Bits 0-3 Red    Bits 4-7 Green
+8					<Symbol Color 2>	Bits 0-3 Blue   Bits 4-7 Reserved
+
+				**** Switch to Symbol Mode (0x02) ****
+		*** This message is header only - no payload bytes
+
+
+				**** Draw Symbol (0x03) ****
+Display Symbol:		Command Byte 0x03
+2					<Symbol ID>			Symbol ID defined in Programming mode
+3					<Position X LSB>	LSB position in X on the display to draw the symbol
+4					<Position X MSB>	MSB position in X on the display to draw the symbol
+5					<Position Y LSB>	LSB position in X on the display to draw the symbol
+6					<Position Y MSB>	MSB position in X on the display to draw the symbol
+

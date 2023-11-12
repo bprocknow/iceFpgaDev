@@ -4,7 +4,13 @@ set_frequency  clk_12m      12
 set_io -nowarn clk_12m      35
 
 ## Buttons
-set_io -nowarn btn_rst      10
+set_io -nowarn n_btn_rst      10
+
+## RS-232
+set_io -nowarn i_uart_rx    20
+
+## GPO IRQ
+set_io -nowarn vsync_irq 21
 
 ## 12-bit DVI Pmod on Pmod 1A/1B
 set_io -nowarn dvi_clk      38
