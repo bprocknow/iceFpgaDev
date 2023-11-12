@@ -1,6 +1,8 @@
 
 IceFpgaDev is a project to create a small fpga graphics processor with a UART interface
 
+Demo Link: https://youtu.be/sZQiFFW6GIg?si=a-iqQxcDgHezIZNo
+
 					---- Rectangle Project ----
 
 The rectangle project renders a rectangle in the middle of the display.  It colors the rest
